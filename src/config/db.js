@@ -1,17 +1,19 @@
-// src/config/db.js
 const { Pool } = require('pg');
-
-// ⚠️ Update with your pgAdmin/PostgreSQL credentials
 const pool = new Pool({
-  user: 'postgres',
   host: 'localhost',
-  database: 'gift_api',
+  user: 'postgres',       
   password: 'admin@123',
-  port: 5432, // default PostgreSQL port
+  database: 'gift_api',     
+  port: 5432                  
 });
 
-pool.connect()
-  .then(() => console.log('✅ Connected to PostgreSQL!'))
-  .catch(err => console.error('❌ DB connection failed:', err));
+// Test connection
+pool.connect((err, client, release) => {
+  if (err) console.error('PostgreSQL connection error', err.stack);
+  else {
+    console.log('✅ Connected to PostgreSQL database');
+    release();
+  }
+});
 
 module.exports = pool;

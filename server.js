@@ -1,17 +1,14 @@
-// server.js
 const express = require('express');
-const customerRoutes = require('./routes/customerRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-
+const cors = require('cors');
 const app = express();
+
+app.use(cors({ origin: 'http://localhost:8100' }));
 app.use(express.json());
 
 // Routes
-app.use('/customers', customerRoutes);
-app.use('/orders', orderRoutes);
+const customerRoutes = require('./routes/customerRoutes');
+app.use('/api/customers', customerRoutes);
 
-// Start server
-const PORT = 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Backend running at http://localhost:${PORT}`);
+app.listen(5000, () => {
+  console.log('🚀 Server running at http://localhost:5000');
 });

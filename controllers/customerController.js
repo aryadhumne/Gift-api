@@ -1,27 +1,35 @@
-// controllers/customerController.js
-const db = require('../src/config/db');
+const db = require("../src/config/db");
 
-// Get all customers
+// ✅ Get all customers
 const getCustomers = async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM customers');
+    const result = await db.query("SELECT * FROM customers");
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ Error fetching customers:", err);
+    res.status(500).json({ error: "Database error" });
   }
 };
 
-// Add customer
+// ✅ Add a new customer
 const addCustomer = async (req, res) => {
-  const { full_name, email, phone } = req.body;  // ✅ use full_name, not name
+  const { fullName, email } = req.body;
+
+  if (!fullName || !email) {
+    return res.status(400).json({ error: "fullName and email are required" });
+  }
+
   try {
     const result = await db.query(
-      'INSERT INTO customers (full_name, email, phone) VALUES ($1, $2, $3) RETURNING *',
-      [full_name, email, phone]
+      `INSERT INTO customers (fullName, email)
+       VALUES ($1, $2) RETURNING *`,
+      [fullName, email]
     );
-    res.json(result.rows[0]);
+
+    res.status(201).json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ Error inserting customer:", err);
+    res.status(500).json({ error: "Database insert error" });
   }
 };
 

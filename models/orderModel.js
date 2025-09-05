@@ -1,18 +1,20 @@
-// models/orderModel.js
-const pool = require('../src/config/db');
+const db = require('../src/config/db');
 
 const Order = {
-  async getAll() {
-    const result = await pool.query('SELECT * FROM orders');
-    return result.rows;
-  },
-
-  async create({ customer_id, order_date }) {
-    const result = await pool.query(
-      'INSERT INTO orders (customer_id, order_date) VALUES ($1, $2) RETURNING *',
-      [customer_id, order_date]
+  async create(customer_id) {
+    const result = await db.query(
+      'INSERT INTO orders (customer_id) VALUES ($1) RETURNING *',
+      [customer_id]
     );
     return result.rows[0];
+  },
+
+  async findByCustomer(customer_id) {
+    const result = await db.query(
+      'SELECT * FROM orders WHERE customer_id = $1',
+      [customer_id]
+    );
+    return result.rows;
   }
 };
 
