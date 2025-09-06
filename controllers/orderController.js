@@ -1,27 +1,34 @@
-const db = require('../src/config/db');
+const pool = require('../DB');
 
-// Create Order
 const createOrder = async (req, res) => {
-  const { customer_id, total_amount } = req.body;
+  const { customer_id, total_amount, items } = req.body;
+
+  if (!customer_id || total_amount == null || !items || !Array.isArray(items)) {
+    return res.status(400).json({ error: 'Invalid request body' });
+  }
+
   try {
-    const result = await db.query(
-      'INSERT INTO orders (customer_id, total_amount) VALUES ($1, $2) RETURNING *',
+    // Insert into orders table including total_amount
+    const orderResult = await pool.query(
+      'INSERT INTO orders (customer_id, total_amount, order_date) VALUES ($1, $2, NOW()) RETURNING order_id',
       [customer_id, total_amount]
     );
-    res.json(result.rows[0]);
+    const order_id = orderResult.rows[0].order_id;
+
+    // Insert order items
+    const promises = items.map(item => {
+      return pool.query(
+        'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)',
+        [order_id, item.product_id, item.quantity, item.price]
+      );
+    });
+    await Promise.all(promises);
+
+    res.json({ message: 'Order placed successfully', order_id });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Backend error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
-// Get Orders
-const getOrders = async (req, res) => {
-  try {
-    const result = await db.query('SELECT * FROM orders');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-module.exports = { createOrder, getOrders };
+module.exports = { createOrder };
