@@ -1,13 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const pool = require("../src/config/db.js"); // PostgreSQL pool
+const pool = require("../src/config/db.js");
 
-// ================== CREATE ORDER ==================
+// ================== PLACE ORDER ==================
 router.post("/", async (req, res) => {
-  // Accept both grandTotal (from frontend) and total_amount (backend consistency)
   const { customer_id, items, grandTotal, total_amount } = req.body;
-
-  const total = grandTotal || total_amount; // normalize field name
+  const total = grandTotal || total_amount;
 
   if (!customer_id || !items || items.length === 0) {
     return res.status(400).json({ error: "Invalid order data" });
@@ -17,17 +15,17 @@ router.post("/", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // Insert into orders table
+    // Insert into orders (use correct column names!)
     const orderResult = await client.query(
-      `INSERT INTO orders (customer_id, total_amount, order_date)
+      `INSERT INTO orders (customer_id, total_amount, created_at)
        VALUES ($1, $2, NOW())
-       RETURNING order_id`,
+       RETURNING id`,
       [customer_id, total]
     );
 
-    const order_id = orderResult.rows[0].order_id;
+    const order_id = orderResult.rows[0].id;
 
-    // Insert each order item (using product_id only)
+    // Insert each order item
     for (const item of items) {
       await client.query(
         `INSERT INTO order_items (order_id, product_id, quantity, price)
@@ -55,7 +53,7 @@ router.post("/", async (req, res) => {
 // ================== GET ALL ORDERS ==================
 router.get("/", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM orders ORDER BY order_date DESC");
+    const result = await pool.query("SELECT * FROM orders ORDER BY created_at DESC");
     res.json(result.rows);
   } catch (err) {
     console.error("❌ Error fetching orders:", err.message);
@@ -67,11 +65,11 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const order = await pool.query("SELECT * FROM orders WHERE order_id = $1", [id]);
+    const order = await pool.query("SELECT * FROM orders WHERE id = $1", [id]);
     const items = await pool.query(
-      `SELECT oi.*, p.product_name 
+      `SELECT oi.*, p.name AS product_name 
        FROM order_items oi
-       JOIN products p ON oi.product_id = p.product_id
+       JOIN products p ON oi.product_id = p.id
        WHERE oi.order_id = $1`,
       [id]
     );
